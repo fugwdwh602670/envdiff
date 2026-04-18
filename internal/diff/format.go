@@ -24,7 +24,7 @@ func FormatResults(results []Result, format OutputFormat, fileA, fileB string) (
 	case FormatCSV:
 		return formatCSV(results), nil
 	default:
-		return "", fmt.Errorf("unknown format: %q", format)
+		return "", fmt.Errorf("unknown format: %q (valid formats: text, json, csv)", format)
 	}
 }
 
@@ -68,11 +68,22 @@ func formatJSON(results []Result, fileA, fileB string) string {
 	return sb.String()
 }
 
+// csvEscape wraps a field in quotes if it contains a comma, quote, or newline.
+func csvEscape(field string) string {
+	if strings.ContainsAny(field, ",\"\n") {
+		return `"` + strings.ReplaceAll(field, `"`, `""`) + `"`
+	}
+	return field
+}
+
 func formatCSV(results []Result) string {
 	var sb strings.Builder
 	sb.WriteString("key,kind,value_a,value_b\n")
 	for _, r := range results {
-		fmt.Fprintf(&sb, "%s,%s,%s,%s\n", r.Key, r.Kind, r.ValueA, r.ValueB)
+		fmt.Fprintf(&sb, "%s,%s,%s,%s\n",
+			csvEscape(r.Key), csvEscape(string(r.Kind)),
+			csvEscape(r.ValueA), csvEscape(r.ValueB),
+		)
 	}
 	return sb.String()
 }
