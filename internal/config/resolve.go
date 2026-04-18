@@ -31,3 +31,14 @@ func (c Config) IgnoreSet() map[string]struct{} {
 	}
 	return s
 }
+
+// IsIgnored reports whether the given key should be ignored
+// based on the config's IgnoreKeys list.
+func (c Config) IsIgnored(key string) bool {
+	for _, k := range c.IgnoreKeys {
+		if k == key {
+			return true
+		}
+	}
+	return false
+}
