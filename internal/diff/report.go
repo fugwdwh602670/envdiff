@@ -16,19 +16,11 @@ func WriteReport(w io.Writer, fileA, fileB string, r Result) {
 	}
 
 	if len(r.MissingInA) > 0 {
-		sorted := sortedCopy(r.MissingInA)
-		fmt.Fprintf(w, "\nKeys missing in %s (%d):\n", fileA, len(sorted))
-		for _, k := range sorted {
-			fmt.Fprintf(w, "  - %s\n", k)
-		}
+		writeMissingKeys(w, fileA, r.MissingInA)
 	}
 
 	if len(r.MissingInB) > 0 {
-		sorted := sortedCopy(r.MissingInB)
-		fmt.Fprintf(w, "\nKeys missing in %s (%d):\n", fileB, len(sorted))
-		for _, k := range sorted {
-			fmt.Fprintf(w, "  - %s\n", k)
-		}
+		writeMissingKeys(w, fileB, r.MissingInB)
 	}
 
 	if len(r.Mismatched) > 0 {
@@ -42,6 +34,15 @@ func WriteReport(w io.Writer, fileA, fileB string, r Result) {
 			v := r.Mismatched[k]
 			fmt.Fprintf(w, "  ~ %s\n    %s: %q\n    %s: %q\n", k, fileA, v[0], fileB, v[1])
 		}
+	}
+}
+
+// writeMissingKeys writes a sorted list of keys missing in the given file to w.
+func writeMissingKeys(w io.Writer, filename string, keys []string) {
+	sorted := sortedCopy(keys)
+	fmt.Fprintf(w, "\nKeys missing in %s (%d):\n", filename, len(sorted))
+	for _, k := range sorted {
+		fmt.Fprintf(w, "  - %s\n", k)
 	}
 }
 
