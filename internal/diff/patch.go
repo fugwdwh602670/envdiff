@@ -126,18 +126,18 @@ func WritePatchReport(entries []PatchEntry, w io.Writer) {
 	}
 
 	total := len(entries)
-	fmt.Fprintf(w, "\nTotal: %d change%s\n", total, pluralS(total))
+	fmt.Fprintf(w, "\nTotal: %d change(s) (%d add, %d update)\n", total, len(adds), len(updates))
 }
 
-func pluralS(n int) string {
-	if n == 1 {
-		return ""
+// FilterPatchEntries returns only the entries whose keys match the given
+// prefix. This is useful when callers want to scope a patch to a subset of
+// keys sharing a common naming convention (e.g. "DB_", "AWS_").
+func FilterPatchEntries(entries []PatchEntry, prefix string) []PatchEntry {
+	var filtered []PatchEntry
+	for _, e := range entries {
+		if strings.HasPrefix(e.Key, prefix) {
+			filtered = append(filtered, e)
+		}
 	}
-	return "s"
-}
-
-// patchLineNeedsQuoting returns true when a value should be double-quoted in
-// the output to preserve whitespace or special characters.
-func patchLineNeedsQuoting(v string) bool {
-	return strings.ContainsAny(v, " \t\n#")
+	return filtered
 }
