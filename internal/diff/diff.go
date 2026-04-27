@@ -1,53 +1,44 @@
 package diff
 
-import "fmt"
+// Status represents the comparison result for a single key.
+type Status string
 
-// Result holds the comparison outcome between two env files.
+const (
+	StatusMatch      Status = "match"
+	StatusMissingInA Status = "missing_in_a"
+	StatusMissingInB Status = "missing_in_b"
+	StatusMismatch   Status = "mismatch"
+)
+
+// Result holds the comparison outcome for a single environment key.
 type Result struct {
-	MissingInA  []string          // keys present in B but not in A
-	MissingInB  []string          // keys present in A but not in B
-	Mismatched  map[string][2]string // keys present in both but with different values
+	Key      string
+	ValueA   string
+	ValueB   string
+	Status   Status
 }
 
-// String returns a human-readable summary of the diff result.
-func (r Result) String() string {
-	var out string
-	for _, k := range r.MissingInA {
-		out += fmt.Sprintf("- missing in A: %s\n", k)
-	}
-	for _, k := range r.MissingInB {
-		out += fmt.Sprintf("- missing in B: %s\n", k)
-	}
-	for k, vals := range r.Mismatched {
-		out += fmt.Sprintf("~ mismatch %s: %q vs %q\n", k, vals[0], vals[1])
-	}
-	return out
-}
-
-// HasDiff reports whether there are any differences.
-func (r Result) HasDiff() bool {
-	return len(r.MissingInA) > 0 || len(r.MissingInB) > 0 || len(r.Mismatched) > 0
-}
-
-// Compare takes two parsed env maps and returns a Result describing their differences.
-func Compare(a, b map[string]string) Result {
-	res := Result{
-		Mismatched: make(map[string][2]string),
-	}
+// Compare compares two env maps and returns a slice of Results.
+func Compare(a, b map[string]string) []Result {
+	seen := make(map[string]bool)
+	var results []Result
 
 	for k, va := range a {
+		seen[k] = true
 		if vb, ok := b[k]; !ok {
-			res.MissingInB = append(res.MissingInB, k)
+			results = append(results, Result{Key: k, ValueA: va, ValueB: "", Status: StatusMissingInB})
 		} else if va != vb {
-			res.Mismatched[k] = [2]string{va, vb}
+			results = append(results, Result{Key: k, ValueA: va, ValueB: vb, Status: StatusMismatch})
+		} else {
+			results = append(results, Result{Key: k, ValueA: va, ValueB: vb, Status: StatusMatch})
 		}
 	}
 
-	for k := range b {
-		if _, ok := a[k]; !ok {
-			res.MissingInA = append(res.MissingInA, k)
+	for k, vb := range b {
+		if !seen[k] {
+			results = append(results, Result{Key: k, ValueA: "", ValueB: vb, Status: StatusMissingInA})
 		}
 	}
 
-	return res
+	return results
 }
